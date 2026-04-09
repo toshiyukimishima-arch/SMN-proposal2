@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NURO光回線 × Firework 提案</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Arial,'Hiragino Kaku Gothic ProN',sans-serif;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+.viewer{width:100%;max-width:960px}
+.slide-wrap{width:100%;aspect-ratio:16/9;position:relative;overflow:hidden;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.slide{position:absolute;inset:0;display:none;background:#fafaf8}
+.slide.active{display:block}
+
+/* nav */
+.nav{display:flex;align-items:center;gap:12px;margin-top:12px}
+.nav button{padding:6px 18px;border-radius:6px;border:1px solid #555;background:#2a2a2a;color:#ccc;font-size:12px;cursor:pointer;font-family:inherit}
+.nav button:hover:not(:disabled){background:#3a3a3a}
+.nav button:disabled{opacity:.3;cursor:default}
+.nav .next{background:#E85D24;border-color:#E85D24;color:#fff}
+.nav .next:hover:not(:disabled){background:#d04e1a}
+.dots{flex:1;display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.dot{width:7px;height:7px;border-radius:4px;background:#555;border:none;cursor:pointer;transition:all .2s;padding:0}
+.dot.active{width:24px;background:#E85D24}
+.page-info{color:#666;font-size:11px;text-align:center;margin-top:6px}
+
+/* ── slide internals (960×540 coordinate space, scaled via transform) ── */
+.s{position:absolute;font-family:'Helvetica Neue',Arial,'Hiragino Kaku Gothic ProN',sans-serif}
+
+/* common */
+.left-bar{position:absolute;left:0;top:0;width:5px;height:100%;background:#E85D24}
+.s-label{position:absolute;left:52px;top:22px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#E85D24}
+.footer{position:absolute;left:52px;bottom:13px;font-size:9px;color:#bbb}
+.content{position:absolute;left:52px;right:52px;top:48px;bottom:30px;display:flex;flex-direction:column;gap:9px}
+.title{font-size:20px;font-weight:700;color:#0F2044;line-height:1.2;flex-shrink:0}
+.kpi-bar{background:#F4F3EF;border-radius:5px;padding:6px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.kpi-bar span:first-child{font-size:10px;font-weight:700;color:#1A56A0;flex-shrink:0}
+.kpi-bar span:last-child{font-size:10px;color:#555}
+.issue-bar{border-radius:5px;padding:6px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;background:#E1F5EE;border:1px solid #0F6E5640}
+.issue-bar .ib-label{font-size:10px;font-weight:700;color:#0F6E56;flex-shrink:0}
+.issue-bar .ib-text{font-size:11px;color:#444}
+.row{display:flex;gap:12px;flex:1;min-height:0}
+.col{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.card{border-radius:8px;padding:12px 13px;flex-shrink:0}
+.card.flex1{flex:1;min-height:0}
+.tag{display:inline-block;padding:1px 7px;border-radius:3px;font-size:9px;font-weight:600;margin-right:4px;margin-top:3px}
+.bul{display:flex;align-items:flex-start;gap:5px;margin-bottom:5px}
+.bul span:first-child{flex-shrink:0;font-weight:700}
+.bul span:last-child{font-size:11px;color:#444;line-height:1.5}
+.divider{width:1px;background:#e0e0e0;flex-shrink:0;align-self:stretch}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0}
+
+/* ── S01 cover ── */
+#s01{background:#0F2044}
+#s01 .geo1{position:absolute;right:0;top:0;width:33%;height:100%;background:#E85D24;opacity:.07}
+#s01 .geo2{position:absolute;right:60px;bottom:60px;width:180px;height:180px;border-radius:50%;border:1px solid rgba(255,255,255,.1)}
+#s01 .inner{position:absolute;left:60px;right:60px;top:60px;bottom:50px;display:flex;flex-direction:column;justify-content:space-between}
+#s01 .eyebrow{font-size:10px;font-weight:600;color:#9ab;letter-spacing:.12em;margin-bottom:10px}
+#s01 .subtitle{font-size:11px;font-weight:600;color:#E85D24;margin-bottom:14px;letter-spacing:.04em}
+#s01 h1{font-size:30px;font-weight:700;color:#fff;line-height:1.25;max-width:580px;margin-bottom:16px}
+#s01 .meta{font-size:12px;color:#9ab;line-height:1.7}
+#s01 .chips{display:flex;gap:10px}
+#s01 .chip{padding:2px 12px;border-radius:20px;font-size:10px;font-weight:600;color:#9ab;border:1px solid rgba(154,171,187,.4)}
+
+/* ── S02 premise ── */
+#s02 .premise-box{background:#F4F3EF;border-radius:6px;padding:10px 16px;font-size:11px;color:#333;line-height:1.65;flex-shrink:0}
+#s02 .sub-title{font-size:12px;font-weight:700;color:#0F2044;flex-shrink:0}
+#s02 .why-cards{display:flex;gap:10px;flex:1;min-height:0}
+#s02 .wc{flex:1;background:#FFF3EE;border-radius:8px;padding:13px 12px}
+#s02 .wc .icon{font-size:20px;margin-bottom:6px}
+#s02 .wc .wc-title{font-size:12px;font-weight:700;color:#0F2044;margin-bottom:5px}
+#s02 .wc .wc-body{font-size:11px;color:#555;line-height:1.6}
+#s02 .theme-bar{background:rgba(15,32,68,.92);backdrop-filter:blur(2px);padding:12px 20px;display:flex;align-items:center;justify-content:center}
+#s02 .theme-bar span{font-size:14px;font-weight:700;color:#fff}
+#s02 .why-cards{display:flex;gap:10px;height:100%}
+#s02 .wc{flex:1;background:#FFF3EE;border-radius:8px;padding:13px 12px;padding-bottom:52px}
+
+/* ── S03 strategy ── */
+#s03 .axis-cards{display:flex;gap:12px;flex-shrink:0}
+#s03 .ac{flex:1;border-radius:10px;padding:15px 14px;padding-bottom:52px}
+#s03 .ac .an{font-size:9px;font-weight:700;letter-spacing:.1em;margin-bottom:3px}
+#s03 .ac .at{font-size:13px;font-weight:700;color:#0F2044;margin-bottom:3px;line-height:1.3}
+#s03 .ac .as{font-size:9px;font-weight:600;letter-spacing:.06em;margin-bottom:10px}
+#s03 .ac .ab{font-size:11px;color:#555;line-height:1.65}
+#s03 .flywheel{background:#0F2044;border-radius:9px;padding:10px 24px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+#s03 .flywheel .fw-body{font-size:12px;color:#fff;line-height:1.65;text-align:center}
+
+/* ── S04 axis1 ── */
+#s04 .intro{font-size:11px;color:#555;line-height:1.5;flex-shrink:0}
+#s04 .talent-cards{display:flex;gap:10px;flex:1;min-height:0}
+#s04 .tc{flex:1;border-radius:9px;padding:12px 12px;display:flex;flex-direction:column}
+#s04 .tc .tc-tag{font-size:9px;font-weight:700;letter-spacing:.08em;margin-bottom:4px}
+#s04 .tc .tc-title{font-size:11px;font-weight:700;color:#0F2044;margin-bottom:5px;line-height:1.35}
+#s04 .tc .tc-body{font-size:10.5px;color:#555;line-height:1.6;margin-bottom:6px}
+#s04 .tc.dark .tc-body{color:#9ab}
+#s04 .tc .tc-buls{flex:1}
+#s04 .tc .tc-tags{margin-top:6px}
+#s04 .tc.dark{background:#0F2044}
+#s04 .tc.dark .tc-tag{color:#9ab}
+#s04 .tc.dark .tc-title{color:#fff}
+#s04 .tc.dark .bul span:last-child{color:#9ab}
+
+/* ── S05 axis2 ── */
+#s05 .intro{font-size:11px;color:#555;line-height:1.5;flex-shrink:0}
+#s05 .insight-bar{background:#0F2044;border-radius:7px;padding:11px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0}
+#s05 .insight-bar .icon{font-size:20px;flex-shrink:0}
+#s05 .insight-bar .ib{font-size:11px;color:#fff;line-height:1.65}
+
+/* ── S06 axis3 ── */
+#s06 .intro{font-size:11px;color:#555;line-height:1.5;flex-shrink:0}
+#s06 .steps{display:flex;align-items:stretch;gap:4px;flex-shrink:0}
+#s06 .step{flex:1;background:#EEEDFE;border-radius:7px;padding:10px 7px;border:1px solid rgba(83,74,183,.3);text-align:center}
+#s06 .step .sn{font-size:9px;font-weight:700;color:#534AB7;margin-bottom:3px}
+#s06 .step .sl{font-size:11px;font-weight:700;color:#0F2044;margin-bottom:4px}
+#s06 .step .sb{font-size:10px;color:#666;line-height:1.5;white-space:pre-line}
+#s06 .arr{font-size:12px;color:#534AB7;flex-shrink:0;align-self:center;padding:0 1px}
+#s06 .back-label{font-size:10px;color:#534AB7;font-weight:600;text-align:right;flex-shrink:0}
+#s06 .goal-bar{background:#0F2044;border-radius:9px;flex:1;display:flex;align-items:center;justify-content:space-around;padding:0 16px;min-height:0}
+#s06 .goal{text-align:center}
+#s06 .goal .gi{font-size:18px;margin-bottom:4px}
+#s06 .goal .gt{font-size:11px;color:#fff;font-weight:600}
+
+/* ── S07 upper ── */
+#s07 .funnel-cards{display:flex;gap:10px;flex:1;min-height:0}
+#s07 .fc{flex:1;border:1px solid #e0e0e0;border-radius:8px;padding:12px 11px;background:#fff;display:flex;flex-direction:column}
+#s07 .fc .fc-title{font-size:12px;font-weight:700;color:#0F2044;margin-bottom:8px;line-height:1.3;flex-shrink:0}
+#s07 .fc .fc-buls{flex:1}
+#s07 .fc .fc-tags{margin-top:6px;flex-shrink:0}
+
+/* ── S08 mid1 ── */
+#s08 .lp-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;flex-shrink:0}
+#s08 .lg{background:#FFF3EE;border-radius:7px;padding:9px 10px}
+#s08 .lg .lg-t{font-size:11px;font-weight:700;color:#0F2044;margin-bottom:4px}
+#s08 .lg .lg-b{font-size:10px;color:#666;line-height:1.5}
+#s08 .live-title{font-size:12px;font-weight:700;color:#E85D24;flex-shrink:0}
+#s08 .live-cards{display:flex;gap:8px;flex:1;min-height:0}
+#s08 .lc{flex:1;border:1px solid rgba(232,93,36,.35);border-radius:8px;padding:10px 11px;background:#fff}
+#s08 .lc .lc-t{font-size:11px;font-weight:700;color:#0F2044;margin-bottom:5px}
+#s08 .lc .lc-b{font-size:11px;color:#555;line-height:1.6}
+
+/* ── S09 mid2 ── */
+#s09 .dv-body{background:#EEF4FC;border-radius:8px;padding:11px 12px;border:1px solid rgba(26,86,160,.2);font-size:11px;color:#555;line-height:1.65;flex-shrink:0}
+#s09 .seg-list{display:flex;flex-direction:column;gap:6px;flex:1}
+#s09 .seg{display:flex;gap:8px;align-items:flex-start}
+#s09 .seg .dot{width:6px;height:6px;border-radius:50%;background:#1A56A0;flex-shrink:0;margin-top:4px}
+#s09 .seg .st{font-size:11px;font-weight:700;color:#0F2044}
+#s09 .seg .sb{font-size:11px;color:#555}
+#s09 .ai-body{background:#EEEDFE;border-radius:8px;padding:11px 12px;border:1px solid rgba(83,74,183,.2);font-size:11px;color:#555;line-height:1.65;flex-shrink:0}
+#s09 .ai-rows{display:flex;flex-direction:column;gap:7px;flex:1}
+#s09 .ai-row{display:flex;gap:8px;align-items:flex-start}
+#s09 .ai-row .ar-label{font-size:10px;font-weight:700;flex-shrink:0;min-width:52px;margin-top:1px}
+#s09 .ai-row .ar-body{font-size:11px;color:#555;line-height:1.6}
+
+/* ── S10 lower ── */
+#s10 .lower-card{border:1px solid #e0e0e0;border-radius:8px;padding:12px 13px;background:#fff;flex:1;display:flex;flex-direction:column;gap:7px}
+#s10 .lower-card .ct{font-size:12px;font-weight:700;color:#0F2044;margin-bottom:2px}
+#s10 .lower-card .cb{font-size:11px;color:#555;line-height:1.7;flex:1}
+#s10 .effect-box{background:#F4F3EF;border-radius:7px;padding:9px 11px}
+#s10 .effect-box .et{font-size:11px;font-weight:700;color:#0F2044;margin-bottom:5px}
+#s10 .ret-card{border:1px solid rgba(232,93,36,.35);border-radius:8px;padding:12px 13px;background:#fff;flex:1;display:flex;flex-direction:column;gap:7px}
+#s10 .ret-card .rt{font-size:12px;font-weight:700;color:#E85D24;margin-bottom:2px}
+#s10 .ret-card .rb{font-size:11px;color:#555;line-height:1.65;flex:1}
+#s10 .ret-icons{display:flex;gap:8px;flex-shrink:0}
+#s10 .ri{flex:1;background:#FFF3EE;border-radius:7px;padding:8px;text-align:center}
+#s10 .ri .ri-i{font-size:18px;margin-bottom:4px}
+#s10 .ri .ri-t{font-size:11px;font-weight:700;color:#0F2044}
+
+/* ── S11 roadmap ── */
+#s11 .rm-rows{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
+#s11 .rm-row{display:flex;gap:9px;flex:1;min-height:0}
+#s11 .rm-phase{flex-shrink:0;width:80px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:6px;line-height:1.4}
+#s11 .rm-items{flex:1;display:flex;gap:8px}
+#s11 .rm-item{flex:1;border-radius:7px;padding:8px 10px;font-size:11px;color:#444;line-height:1.5;display:flex;align-items:flex-start;gap:5px}
+#s11 .rm-item .bul-dot{flex-shrink:0;font-weight:700}
+
+/* ── S12 summary ── */
+#s12 .tbl{flex:1;min-height:0;display:flex;flex-direction:column}
+#s12 .th-row{display:flex;background:#0F2044;border-radius:7px 7px 0 0;padding:7px 0}
+#s12 .th-row div{font-size:9px;font-weight:700;color:#fff;padding:0 8px}
+#s12 .td-row{display:flex;padding:4px 0;border-bottom:1px solid #eee}
+#s12 .td-row div{font-size:10px;padding:0 8px;line-height:1.35}
+#s12 .axis-chips{display:flex;gap:9px;flex-shrink:0;margin-top:6px}
+#s12 .ac{flex:1;border-radius:7px;padding:7px 12px;display:flex;align-items:center;gap:9px}
+#s12 .ac .al{font-size:9px;font-weight:700;min-width:26px}
+#s12 .ac .an{font-size:11px;font-weight:700;color:#0F2044}
+#s12 .ac .as{font-size:10px;color:#666;margin-top:1px}
+</style>
+</head>
+<body>
+
+<div class="viewer">
+  <div class="slide-wrap" id="slideWrap">
+
+    <!-- S01 Cover -->
+    <div class="slide active" id="s01">
+      <div class="geo1"></div>
+      <div class="geo2"></div>
+      <div class="inner">
+        <div>
+          <div class="eyebrow">PROPOSAL · APRIL 2026</div>
+          <div class="subtitle">NURO光回線 × Firework</div>
+          <h1>「AIに理解され、<br>人に愛されるオンライン体験」<br>をつくる</h1>
+          <div class="meta">中長期マーケティング戦略提案<br>ソニーネットワークコミュニケーションズ株式会社 御中</div>
+        </div>
+        <div class="chips">
+          <span class="chip">Video Engagement</span>
+          <span class="chip">AI Optimization</span>
+          <span class="chip">AI Growth Loop</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S02 前提 -->
+    <div class="slide" id="s02">
+      <div class="left-bar"></div>
+      <div class="s-label">はじめに</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">本提案の前提</div>
+        <div class="premise-box">AIの台頭により消費者の情報収集・意思決定の行動は大きく変化しています。従来型のマーケティング手法が通用しにくくなっている今は、<strong>ブランドとのコミュニケーション設計を根本から見直す転換期</strong>にあります。</div>
+        <div class="sub-title">なぜ今、この戦略が必要か</div>
+        <div style="position:relative;flex:1;min-height:0">
+          <div class="why-cards" style="height:100%">
+            <div class="wc"><div class="icon">🤖</div><div class="wc-title">日常的なAIとの対話</div><div class="wc-body">サービスを検討する際、検索エンジンではなくChatGPTやPerplexityに話しかけて答えをもらうことが当たり前になりつつある。AIとの対話が消費者の情報収集の起点になっている。</div></div>
+            <div class="wc"><div class="icon">📹</div><div class="wc-title">動画が判断を左右する</div><div class="wc-body">検討段階のユーザーは文字よりも動画で理解・納得する。LPの動画体験が申込み意向に直接影響を与える。</div></div>
+            <div class="wc"><div class="icon">🔄</div><div class="wc-title">データが資産にならない</div><div class="wc-body">従来型の運用では顧客の課題・関心データが蓄積されず、マーケティングの質が向上するサイクルが生まれない。</div></div>
+          </div>
+          <div class="theme-bar" style="position:absolute;bottom:0;left:0;right:0;margin:0;border-radius:7px">
+            <span>「AIに理解され、人に愛されるオンライン体験をつくる」</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S03 戦略概要 -->
+    <div class="slide" id="s03">
+      <div class="left-bar"></div>
+      <div class="s-label">戦略概要</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">三つのソリューション軸</div>
+        <div style="position:relative;flex:1;min-height:0">
+        <div class="axis-cards" style="height:100%">
+          <div class="ac" style="background:#FFF3EE;border:1px solid rgba(232,93,36,.3)">
+            <div class="an" style="color:#E85D24">軸①</div>
+            <div class="at">人に愛されるブランド体験</div>
+            <div class="as" style="color:#E85D24">Video Engagement</div>
+            <div class="ab">タレントアセットと動画コンテンツで感情に訴えるブランド体験を設計。価格ではなく「共感」で選ばれるブランドへの転換。</div>
+          </div>
+          <div class="ac" style="background:#EEF4FC;border:1px solid rgba(26,86,160,.3)">
+            <div class="an" style="color:#1A56A0">軸②</div>
+            <div class="at">AIに理解されるサイトへ</div>
+            <div class="as" style="color:#1A56A0">AI Optimization</div>
+            <div class="ab">生成AI検索でNUROが正しく引用・推薦されるために、ユーザーとの対話データをもとに公式サイトの情報を拡充・整備する。</div>
+          </div>
+          <div class="ac" style="background:#EEEDFE;border:1px solid rgba(83,74,183,.3)">
+            <div class="an" style="color:#534AB7">軸③</div>
+            <div class="at">データドリブンな継続改善</div>
+            <div class="as" style="color:#534AB7">AI Growth Loop</div>
+            <div class="ab">軸①②で得たユーザーデータを広告・コンテンツにフィードバックし、マーケティング全体の精度が上がり続ける仕組みを構築する。</div>
+          </div>
+        </div>
+        <div class="flywheel" style="position:absolute;bottom:0;left:0;right:0;border-radius:7px;backdrop-filter:blur(2px);background:rgba(15,32,68,.92)">
+          <div class="fw-body">三つの軸は独立した施策ではなく<strong style="color:#E85D24">相互に連動するフライホイール</strong>です。動画コンテンツが対話データを生み、対話データがAIOを強化し、AIOが広告精度を高め、さらに良いコンテンツへとつながります。</div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S04 軸① -->
+    <div class="slide" id="s04">
+      <div class="left-bar" style="background:#E85D24"></div>
+      <div class="s-label" style="color:#E85D24">軸① ── Video Engagement</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">人に愛されるブランド体験</div>
+        <div class="intro">タレントアセットを「キャッシュバック訴求」から切り離し、ブランドの世界観を語るコンテンツとして再設計します。</div>
+        <div class="talent-cards">
+          <div class="tc" style="border:1px solid rgba(232,93,36,.4);background:#fff">
+            <div class="tc-tag" style="color:#E85D24">ちゃんみな × NURO</div>
+            <div class="tc-title">「速さと自由が、クリエイティビティを解放する」</div>
+            <div class="tc-body">10〜30代・都市部・感度高めのコアターゲットと重なるファン層へ、ブランドメッセージを体現するコンテンツで届ける。</div>
+            <div class="tc-buls">
+              <div class="bul"><span style="color:#E85D24">•</span><span>ショートドラマ・MV連動コンテンツ（YouTube / Firework）</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>「実際に使ってみた」ドキュメンタリー形式インタビュー</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>タレント動画アセットを活用した縦型ショート動画をLPに配置し、訪問者のエンゲージメントと申込み意向を高める</span></div>
+            </div>
+            <div class="tc-tags">
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">YouTube</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">Firework</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">縦型動画LP</span>
+            </div>
+          </div>
+          <div class="tc" style="border:1px solid rgba(232,93,36,.4);background:#fff">
+            <div class="tc-tag" style="color:#E85D24">乃木坂46 × So-net</div>
+            <div class="tc-title">So-netイメージキャラクターとしてのブランド共感</div>
+            <div class="tc-body">So-netのイメージキャラクターである乃木坂46を活用し、既存ファン層・ファミリー世帯へのブランド親近感を醸成する。</div>
+            <div class="tc-buls">
+              <div class="bul"><span style="color:#E85D24">•</span><span>So-net公式サイト・キャンペーンページへの縦型ショート動画配置</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>「おうち時間とインターネット」シリーズ（SNS・YouTube展開）</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>ラジオ・ポッドキャスト番組で長期接触による親近感を設計</span></div>
+            </div>
+            <div class="tc-tags">
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">So-net</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">縦型動画LP</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">Podcast</span>
+            </div>
+          </div>
+          <div class="tc dark" style="border:1px solid #0F2044">
+            <div class="tc-tag">DV360 配信</div>
+            <div class="tc-title">プレミアム面でのプログラマティック配信</div>
+            <div class="tc-body">タレントファン層のオーディエンスセグメントを構築し、コンテキストターゲティングと組み合わせて配信。</div>
+            <div class="tc-buls">
+              <div class="bul"><span style="color:#9ab">•</span><span style="color:#9ab">ファン層オーディエンスセグメント構築</span></div>
+              <div class="bul"><span style="color:#9ab">•</span><span style="color:#9ab">ブランドセーフなプレミアム動画面への配信</span></div>
+            </div>
+            <div class="tc-tags">
+              <span class="tag" style="background:rgba(255,255,255,.12);color:#9ab">DV360</span>
+              <span class="tag" style="background:rgba(255,255,255,.12);color:#9ab">Programmatic</span>
+            </div>
+          </div>
+        </div>
+        <div class="kpi-bar">
+          <span>KPI</span>
+          <span>指名検索数の推移　／　ブランド好感度（Brand Lift調査）　／　動画完視率</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S05 軸② AIO -->
+    <div class="slide" id="s05">
+      <div class="left-bar" style="background:#1A56A0"></div>
+      <div class="s-label" style="color:#1A56A0">軸② ── AIO：AI Optimization</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">AIに理解されるサイトへ</div>
+        <div style="background:#0F2044;border-radius:6px;padding:9px 16px;flex-shrink:0;display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px;flex-shrink:0">💡</span>
+          <span style="font-size:11px;color:#fff;line-height:1.65">AIは複数のウェブページを横断して読み込み、統合した「答え」を生成します。<strong style="color:#E85D24">公式サイトの情報が充実しており、かつAIが読み取りやすい構造化データになっていること</strong>が、生成AI検索で引用・推薦される大前提です。</span>
+        </div>
+        <div class="grid2">
+          <div class="card" style="background:#EEF4FC;border:1px solid rgba(26,86,160,.2)">
+            <div style="font-size:9px;font-weight:700;color:#1A56A0;letter-spacing:.08em;margin-bottom:4px">01</div>
+            <div style="font-size:12px;font-weight:700;color:#0F2044;margin-bottom:5px">対話データをサイトに反映</div>
+            <div style="font-size:11px;color:#555;line-height:1.6">AIチャットエージェントで収集した対話ログを分析。よく聞かれる質問・迷いのパターンをFAQ・解説コンテンツとして公式サイトに反映し続ける。</div>
+          </div>
+          <div class="card" style="background:#EEF4FC;border:1px solid rgba(26,86,160,.2)">
+            <div style="font-size:9px;font-weight:700;color:#1A56A0;letter-spacing:.08em;margin-bottom:4px">02</div>
+            <div style="font-size:12px;font-weight:700;color:#0F2044;margin-bottom:5px">ユーザーインサイトの横断活用</div>
+            <div style="font-size:11px;color:#555;line-height:1.6">Fireworkライブのコメント・動画LP視聴行動・DV360の配信結果データも情報整備に活用。広告・動画・サイトが連動してNUROへの問いへの答えを厚くする。</div>
+          </div>
+          <div class="card" style="background:#EEF4FC;border:1px solid rgba(26,86,160,.2)">
+            <div style="font-size:9px;font-weight:700;color:#1A56A0;letter-spacing:.08em;margin-bottom:4px">03</div>
+            <div style="font-size:12px;font-weight:700;color:#0F2044;margin-bottom:5px">構造化データの実装</div>
+            <div style="font-size:11px;color:#555;line-height:1.6">FAQ Schema・Product Schema・Review Schemaを実装し、AIがNUROのサービス情報（料金・速度・エリア・評価）を正確に読み取れる状態を整える。</div>
+          </div>
+          <div class="card" style="background:#EEF4FC;border:1px solid rgba(26,86,160,.2)">
+            <div style="font-size:9px;font-weight:700;color:#1A56A0;letter-spacing:.08em;margin-bottom:4px">04</div>
+            <div style="font-size:12px;font-weight:700;color:#0F2044;margin-bottom:5px">Answer-First Design</div>
+            <div style="font-size:11px;color:#555;line-height:1.6">「NUROとフレッツ光の速度差は？」「工事の立ち会いは必要？」などAIへの質問を想定したページ構成へ。情報の深さと網羅性が信頼される情報源の基盤になる。</div>
+          </div>
+        </div>
+        <div class="insight-bar">
+          <div class="icon">💡</div>
+          <div class="ib">AIチャットエージェントで収集した対話データ → FAQページへ反映 → 生成AI検索での引用増加 → サイト情報がさらに充実するという<strong style="color:#E85D24">自己強化サイクル</strong>を構築します。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S06 軸③ Growth Loop -->
+    <div class="slide" id="s06">
+      <div class="left-bar" style="background:#534AB7"></div>
+      <div class="s-label" style="color:#534AB7">軸③ ── AI Growth Loop</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">データドリブンな継続改善サイクル</div>
+        <div class="intro">軸①②で得られるユーザーデータを広告・コンテンツ・サイトに還流させ、実行するほど精度が上がる構造をつくります。</div>
+        <div style="flex:1;min-height:0"></div>
+        <div class="steps">
+          <div class="step"><div class="sn">STEP ①</div><div class="sl">データ収集</div><div class="sb">Firework視聴&#10;AIチャット対話&#10;DV360配信結果</div></div>
+          <div class="arr">→</div>
+          <div class="step"><div class="sn">STEP ②</div><div class="sl">AIO整備</div><div class="sb">FAQ・解説記事&#10;構造化データ&#10;ページ拡充</div></div>
+          <div class="arr">→</div>
+          <div class="step"><div class="sn">STEP ③</div><div class="sl">AI推薦率向上</div><div class="sb">生成AI検索での&#10;引用増加&#10;CV率改善</div></div>
+          <div class="arr">→</div>
+          <div class="step"><div class="sn">STEP ④</div><div class="sl">広告精度向上</div><div class="sb">DV360セグメント&#10;反映・CPA改善</div></div>
+          <div class="arr">→</div>
+          <div class="step"><div class="sn">STEP ⑤</div><div class="sl">コンテンツ改善</div><div class="sb">Firework動画の&#10;トピック最適化</div></div>
+        </div>
+        <div style="flex:1;min-height:0"></div>
+        <div class="goal-bar">
+          <div class="goal"><div class="gi">🤖</div><div class="gt">AIにも選ばれるブランドへ</div></div>
+          <div style="width:1px;height:28px;background:rgba(255,255,255,.15);flex-shrink:0"></div>
+          <div class="goal"><div class="gi">❤️</div><div class="gt">人にも愛されるブランドへ</div></div>
+          <div style="width:1px;height:28px;background:rgba(255,255,255,.15);flex-shrink:0"></div>
+          <div class="goal"><div class="gi">📈</div><div class="gt">競合との構造的優位性を積み上げる</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S07 Upper Funnel -->
+    <div class="slide" id="s07">
+      <div class="left-bar" style="background:#0F6E56"></div>
+      <div class="s-label" style="color:#0F6E56">ファネル設計 ── Upper Funnel</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">ブランド認知とコンテンツ資産の形成</div>
+        <div class="issue-bar"><span class="ib-label">課題</span><span class="ib-text">キャッシュバック施策の訴求が中心となっており、ブランドの世界観を伝えファンを育てる施策が少ない。</span></div>
+        <div class="funnel-cards">
+          <div class="fc">
+            <div class="fc-title">ちゃんみな × NURO ブランドコンテンツ</div>
+            <div class="fc-buls">
+              <div class="bul"><span style="color:#E85D24">•</span><span>ショートドラマ・MV連動コンテンツ（YouTube / Firework）</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>「実際に使ってみた」ドキュメンタリー形式インタビュー</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>Fireworkで縦型ショート動画に編集しブランドサイト・LPに配置。訪問者をファンへと育てる接点をつくる</span></div>
+            </div>
+            <div class="fc-tags">
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">YouTube</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">Firework</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">縦型動画LP</span>
+            </div>
+          </div>
+          <div class="fc">
+            <div class="fc-title">乃木坂46 × So-net ブランドコンテンツ</div>
+            <div class="fc-buls">
+              <div class="bul"><span style="color:#E85D24">•</span><span>「おうち時間とインターネット」シリーズ（SNS・YouTube展開）</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>ラジオ・ポッドキャスト番組で長期接触を設計</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>Fireworkで縦型ショート動画に編集しSo-net公式サイト・LPに配置。ファン層との継続的な関係を構築する</span></div>
+            </div>
+            <div class="fc-tags">
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">So-net</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">Firework</span>
+              <span class="tag" style="background:#FFF3EE;color:#E85D24">縦型動画LP</span>
+            </div>
+          </div>
+          <div class="fc">
+            <div class="fc-title">DV360 プログラマティック配信</div>
+            <div class="fc-buls">
+              <div class="bul"><span style="color:#E85D24">•</span><span>タレントファン層のオーディエンスセグメント構築</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>コンテキストターゲティングとの組み合わせ</span></div>
+              <div class="bul"><span style="color:#E85D24">•</span><span>ブランドセーフなプレミアム面への動画配信</span></div>
+            </div>
+            <div class="fc-tags">
+              <span class="tag" style="background:#EEF4FC;color:#1A56A0">DV360</span>
+            </div>
+          </div>
+        </div>
+        <div class="kpi-bar">
+          <span>KPI</span>
+          <span>指名検索数の推移　／　ブランド好感度（Brand Lift調査）　／　動画完視率</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S08 Mid Funnel 1/2 -->
+    <div class="slide" id="s08">
+      <div class="left-bar" style="background:#E85D24"></div>
+      <div class="s-label">ファネル設計 ── Mid Funnel（1/2）</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">Fireworkで「体験」させる</div>
+        <div class="issue-bar"><span class="ib-label">課題</span><span class="ib-text">認知から申込みまでの間で検討者が離脱。比較検討がAI検索へ移行するなか、公式サイトのコンテンツ密度が低い。</span></div>
+        <div style="font-size:12px;font-weight:700;color:#E85D24;flex-shrink:0">Firework 動画LP（Video Commerce）</div>
+        <div class="lp-grid">
+          <div class="lg"><div class="lg-t">速度デモ動画</div><div class="lg-b">性能の納得感を視覚的に伝える</div></div>
+          <div class="lg"><div class="lg-t">属性別ユーザーインタビュー</div><div class="lg-b">ゲーマー・クリエイター・ファミリー別の体験談</div></div>
+          <div class="lg"><div class="lg-t">工事・開通プロセス解説</div><div class="lg-b">「面倒そう」という不安を払拭するステップ動画</div></div>
+          <div class="lg"><div class="lg-t">タレントコンテンツ転用</div><div class="lg-b">Phase 1アセットをLPで再活用しコスト効率を向上</div></div>
+        </div>
+        <div class="live-title">Firework ライブコマース（月1〜2回）</div>
+        <div class="live-cards">
+          <div class="lc"><div class="lc-t">申込み相談ライブ</div><div class="lc-b">リアルタイムQ&Aから申込みページへの動線。「ライブ限定特典」でキャッシュバック競争から切り離した申込み動機を設計。</div></div>
+          <div class="lc"><div class="lc-t">ライブアーカイブの活用</div><div class="lc-b">ライブアーカイブをFAQコンテンツとして整備し、AIO素材として公式サイトに転用。制作コストを圧縮。</div></div>
+          <div class="lc"><div class="lc-t">人の温もりによる信頼醸成</div><div class="lc-b">価格訴求に頼らず「担当者の顔が見える安心感」を動画で実現。エンゲージメントと成約率を同時に向上させる。</div></div>
+        </div>
+        <div class="kpi-bar">
+          <span>KPI</span>
+          <span>LP滞在時間　／　動画視聴CVR　／　ライブ参加数　／　ライブ経由申込み数</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S09 Mid Funnel 2/2 -->
+    <div class="slide" id="s09">
+      <div class="left-bar" style="background:#1A56A0"></div>
+      <div class="s-label" style="color:#1A56A0">ファネル設計 ── Mid Funnel（2/2）</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">AIに「理解」させ、精度を高める</div>
+        <div class="row">
+          <div class="col">
+            <div style="font-size:12px;font-weight:700;color:#534AB7;flex-shrink:0">AIチャットエージェントの設置</div>
+            <div class="ai-body">公式サイトにAIチャットエージェントを設置し、ユーザーが自然に入力した疑問をリアルタイムで収集。体験改善とAIO（軸②）の両方に機能する起点となる。</div>
+            <div class="ai-rows">
+              <div class="ai-row"><div class="ar-label" style="color:#E85D24">体験として</div><div class="ar-body">「工事の立ち会いは必要？」「マンションでも使える？」に即時回答し、検討段階での離脱を防ぐ。</div></div>
+              <div class="ai-row"><div class="ar-label" style="color:#1A56A0">AIOとして</div><div class="ar-body">対話ログから疑問パターンを抽出しFAQ・解説コンテンツに反映。生成AI検索での引用確率を継続的に高める。</div></div>
+            </div>
+            <div style="flex-shrink:0">
+              <span class="tag" style="background:#EEEDFE;color:#534AB7">AI Agent</span>
+              <span class="tag" style="background:#EEEDFE;color:#534AB7">AIO連携</span>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="col">
+            <div style="font-size:12px;font-weight:700;color:#1A56A0;flex-shrink:0">広告運用へのデータ活用</div>
+            <div class="dv-body">Firework LP上の動画視聴データとAIチャットエージェントの対話データを統合し、オーディエンスセグメントを構築。検討温度の高いユーザーへ精度の高い広告配信を実施する。</div>
+            <div class="seg-list">
+              <div class="seg"><div class="dot"></div><div><span class="st">視聴完了セグメント：</span><span class="sb">速度デモ・工事解説動画を最後まで視聴したユーザー</span></div></div>
+              <div class="seg"><div class="dot"></div><div><span class="st">対話データセグメント：</span><span class="sb">AIチャットで申込み・料金・工事を質問したユーザー</span></div></div>
+              <div class="seg"><div class="dot"></div><div><span class="st">高エンゲージメント層：</span><span class="sb">動画視聴＋チャット対話の複合行動ユーザー</span></div></div>
+            </div>
+            <div style="flex-shrink:0">
+              <span class="tag" style="background:#EEF4FC;color:#1A56A0">DV360</span>
+              <span class="tag" style="background:#EEF4FC;color:#1A56A0">Firework Analytics</span>
+              <span class="tag" style="background:#EEEDFE;color:#534AB7">AI Agent Data</span>
+            </div>
+          </div>
+        </div>
+        <div class="kpi-bar">
+          <span>KPI</span>
+          <span>リターゲティングCTR・CVR改善率　／　AIチャット対話数　／　FAQ更新サイクル頻度</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S10 Lower + Retention -->
+    <div class="slide" id="s10">
+      <div class="left-bar" style="background:#444441"></div>
+      <div class="s-label" style="color:#444441">ファネル設計 ── Lower Funnel & Retention</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">獲得CPAの改善と解約率の低下を両立する</div>
+        <div class="issue-bar"><span class="ib-label">課題</span><span class="ib-text">価格競争による獲得は続けつつ、LTVを高めるリテンション施策が手薄。</span></div>
+        <div class="row">
+          <div class="col">
+            <div style="font-size:12px;font-weight:700;color:#0F2044;flex-shrink:0">Lower Funnel：申込み獲得</div>
+            <div class="lower-card">
+              <div class="ct">指名検索のキャプチャ（SEM / SEO）</div>
+              <div class="cb">Upper / Mid施策で育てた指名検索ニーズをSEM/SEOで効率的に刈り取る。ブランドへの愛着があるユーザーはキャッシュバック比較をせずに申込む傾向があり、CPA改善に直結する。</div>
+              <div class="effect-box">
+                <div class="et">期待効果</div>
+                <div class="bul"><span style="color:#E85D24">•</span><span>指名検索経由獲得比率の向上</span></div>
+                <div class="bul"><span style="color:#E85D24">•</span><span>キャッシュバック依存度の段階的な低下</span></div>
+                <div class="bul"><span style="color:#E85D24">•</span><span>LTV（顧客生涯価値）の改善</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="col">
+            <div style="font-size:12px;font-weight:700;color:#0F2044;flex-shrink:0">Retention：既存顧客維持</div>
+            <div class="ret-card">
+              <div class="rt">Firework 動画コンテンツ（会員向け）</div>
+              <div class="rb">マイページ・会員向けメールにFirework動画を展開。「NURO光をもっと活かす使い方」「新機能紹介」などが解約防止とアップセルを兼ねる。</div>
+              <div class="ret-icons">
+                <div class="ri"><div class="ri-i">🛡️</div><div class="ri-t">解約防止</div></div>
+                <div class="ri"><div class="ri-i">📈</div><div class="ri-t">アップセル</div></div>
+                <div class="ri"><div class="ri-i">⭐</div><div class="ri-t">NPS向上</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="kpi-bar">
+          <span>KPI</span>
+          <span>申込みCPA　／　指名経由獲得比率　／　解約率　／　既存顧客コンテンツ視聴率　／　NPS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- S11 Roadmap -->
+    <div class="slide" id="s11">
+      <div class="left-bar"></div>
+      <div class="s-label">実行計画</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">推奨ロードマップ</div>
+        <!-- funnel labels row -->
+        <div style="display:flex;gap:0;flex-shrink:0;margin-bottom:2px;padding-left:96px">
+          <div style="flex:1;text-align:center;font-size:9px;font-weight:700;color:#E85D24;letter-spacing:.06em;padding:3px 6px;background:#FFF3EE;border-radius:4px;margin:0 3px">UPPER FUNNEL</div>
+          <div style="flex:1;text-align:center;font-size:9px;font-weight:700;color:#1A56A0;letter-spacing:.06em;padding:3px 6px;background:#EEF4FC;border-radius:4px;margin:0 3px">MID FUNNEL</div>
+          <div style="flex:1;text-align:center;font-size:9px;font-weight:700;color:#534AB7;letter-spacing:.06em;padding:3px 6px;background:#EEEDFE;border-radius:4px;margin:0 3px">MID→LOWER</div>
+        </div>
+        <div class="rm-rows">
+          <div class="rm-row">
+            <div class="rm-phase" style="background:#E85D24">Phase 1</div>
+            <div class="rm-items">
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(232,93,36,.35)"><span class="bul-dot" style="color:#E85D24">•</span><span>ブランディングコンテンツ制作開始</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(26,86,160,.35)"><span class="bul-dot" style="color:#1A56A0">•</span><span>Firework 縦型動画LP設置・初期コンテンツ配置</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(83,74,183,.35)"><span class="bul-dot" style="color:#534AB7">•</span><span>DV360 セグメント設計・既存キャンペーン整理</span></div>
+            </div>
+          </div>
+          <div class="rm-row">
+            <div class="rm-phase" style="background:#1A56A0">Phase 2</div>
+            <div class="rm-items">
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(232,93,36,.35)"><span class="bul-dot" style="color:#E85D24">•</span><span>ブランディングコンテンツ配信・縦型動画LP展開</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(26,86,160,.35)"><span class="bul-dot" style="color:#1A56A0">•</span><span>Firework ライブコマース初回実施</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(83,74,183,.35)"><span class="bul-dot" style="color:#534AB7">•</span><span>AIチャットエージェント設置・対話データ収集開始</span></div>
+            </div>
+          </div>
+          <div class="rm-row">
+            <div class="rm-phase" style="background:#534AB7">Phase 3</div>
+            <div class="rm-items">
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(232,93,36,.35)"><span class="bul-dot" style="color:#E85D24">•</span><span>コンテンツラインナップの拡充・ライブ定期化</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(26,86,160,.35)"><span class="bul-dot" style="color:#1A56A0">•</span><span>対話データ・視聴データを統合したセグメント精緻化</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(83,74,183,.35)"><span class="bul-dot" style="color:#534AB7">•</span><span>AIOコンテンツ整備（FAQ・解説記事）の本格展開</span></div>
+            </div>
+          </div>
+          <div class="rm-row">
+            <div class="rm-phase" style="background:#0F6E56">Phase 4</div>
+            <div class="rm-items">
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(232,93,36,.35)"><span class="bul-dot" style="color:#E85D24">•</span><span>指名検索・ブランドロイヤリティ指標の定期モニタリング</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(26,86,160,.35)"><span class="bul-dot" style="color:#1A56A0">•</span><span>AI Growth Loop 本格稼働・継続改善サイクルへ</span></div>
+              <div class="rm-item" style="background:#fff;border:1px solid rgba(83,74,183,.35)"><span class="bul-dot" style="color:#534AB7">•</span><span>AI検索での引用状況を定点観測・コンテンツ優先度調整</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S12 Summary -->
+    <div class="slide" id="s12">
+      <div class="left-bar"></div>
+      <div class="s-label">まとめ</div>
+      <div class="footer">Firework Confidential</div>
+      <div class="content">
+        <div class="title">Fireworkソリューション 活用サマリー</div>
+        <div class="tbl">
+          <div class="th-row">
+            <div style="flex:1.3">Fireworkソリューション</div>
+            <div style="flex:1">活用局面</div>
+            <div style="flex:1.6">主な価値</div>
+            <div style="flex:0.4">軸</div>
+          </div>
+          <div class="td-row" style="background:#fafaf8">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">ショート動画</div>
+            <div style="flex:1;color:#555">Upper / Mid：認知・LP体験</div>
+            <div style="flex:1.6;color:#555">タレントコンテンツを縦型ショート動画に編集しブランドサイト・LPに配置。ファンを育てる接点をつくる</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">①②</div>
+          </div>
+          <div class="td-row">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">動画制作</div>
+            <div style="flex:1;color:#555">Upper / Mid：コンテンツ資産形成</div>
+            <div style="flex:1.6;color:#555">速度デモ・ユーザーインタビュー・工事解説など検討者の疑問に答えるコンテンツを制作</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">①②</div>
+          </div>
+          <div class="td-row" style="background:#fafaf8">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">ライブ配信</div>
+            <div style="flex:1;color:#555">Mid / Lower：申込み促進</div>
+            <div style="flex:1.6;color:#555">申込み相談ライブ・リアルタイムQ&Aで「人の温もり」を提供。キャッシュバックに頼らない申込み動機を設計する</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">①③</div>
+          </div>
+          <div class="td-row">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">ライブ配信運営支援</div>
+            <div style="flex:1;color:#555">Mid / Lower：運用効率化</div>
+            <div style="flex:1.6;color:#555">ライブ配信の企画・進行・モデレーションをサポートし、定期開催を無理なく継続できる体制を構築する</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">①③</div>
+          </div>
+          <div class="td-row" style="background:#fafaf8">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">ライブ配信切り抜き動画</div>
+            <div style="flex:1;color:#555">Mid：コンテンツ資産の二次活用</div>
+            <div style="flex:1.6;color:#555">ライブアーカイブから要点を切り抜き縦型ショート動画に変換。LP・SNS・AIO素材として横断活用しコスト効率を高める</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">①②③</div>
+          </div>
+          <div class="td-row">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">AI接客エージェント</div>
+            <div style="flex:1;color:#555">Mid：離脱防止・AIO起点</div>
+            <div style="flex:1.6;color:#555">公式サイトに設置し検討者の疑問にリアルタイム回答。対話データをサイト情報拡充とAIOに反映するサイクルの起点となる</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">②③</div>
+          </div>
+          <div class="td-row" style="background:#fafaf8">
+            <div style="flex:1.3;color:#E85D24;font-weight:600">対話データ分析</div>
+            <div style="flex:1;color:#555">Full Funnel：継続改善</div>
+            <div style="flex:1.6;color:#555">視聴・対話データを統合分析しオーディエンスセグメントを精緻化。DV360広告配信・コンテンツ改善・AIO整備に反映するGrowth Loopを駆動する</div>
+            <div style="flex:0.4;color:#534AB7;font-weight:600">③</div>
+          </div>
+        </div>
+        <div class="axis-chips">
+          <div class="ac" style="background:#FFF3EE;border:1px solid rgba(232,93,36,.3)">
+            <div class="al" style="color:#E85D24">軸①</div>
+            <div><div class="an">Video Engagement</div><div class="as">人に愛されるブランド体験</div></div>
+          </div>
+          <div class="ac" style="background:#EEF4FC;border:1px solid rgba(26,86,160,.3)">
+            <div class="al" style="color:#1A56A0">軸②</div>
+            <div><div class="an">AI Optimization</div><div class="as">AIに理解されるサイトへ</div></div>
+          </div>
+          <div class="ac" style="background:#EEEDFE;border:1px solid rgba(83,74,183,.3)">
+            <div class="al" style="color:#534AB7">軸③</div>
+            <div><div class="an">AI Growth Loop</div><div class="as">データドリブンな継続改善</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /.slide-wrap -->
+
+  <div class="nav">
+    <button id="btnPrev" onclick="go(-1)" disabled>← 前へ</button>
+    <div class="dots" id="dots"></div>
+    <button id="btnNext" class="next" onclick="go(1)">次へ →</button>
+  </div>
+  <div class="page-info" id="pageInfo"></div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const labels = ["表紙","前提","戦略概要","軸①","軸②","軸③","Upper","Mid 1/2","Mid 2/2","Lower & Retention","ロードマップ","まとめ"];
+let cur = 0;
+
+// build dots
+const dotsEl = document.getElementById('dots');
+slides.forEach((_,i)=>{
+  const b = document.createElement('button');
+  b.className = 'dot' + (i===0?' active':'');
+  b.title = labels[i];
+  b.onclick = ()=>goTo(i);
+  dotsEl.appendChild(b);
+});
+
+function goTo(n){
+  slides[cur].classList.remove('active');
+  dotsEl.children[cur].classList.remove('active');
+  cur = n;
+  slides[cur].classList.add('active');
+  dotsEl.children[cur].classList.add('active');
+  document.getElementById('btnPrev').disabled = cur===0;
+  document.getElementById('btnNext').disabled = cur===slides.length-1;
+  document.getElementById('pageInfo').textContent = `${cur+1} / ${slides.length}　${labels[cur]}`;
+}
+
+function go(d){ if(cur+d>=0 && cur+d<slides.length) goTo(cur+d); }
+
+// keyboard nav
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') go(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp') go(-1);
+});
+
+// scale to fit container
+const wrap = document.getElementById('slideWrap');
+function scaleSlides(){
+  const w = wrap.offsetWidth;
+  const s = w/960;
+  wrap.style.height = (540*s)+'px';
+  document.querySelectorAll('.slide').forEach(el=>{
+    el.style.transform = `scale(${s})`;
+    el.style.transformOrigin = 'top left';
+    el.style.width = '960px';
+    el.style.height = '540px';
+  });
+}
+scaleSlides();
+window.addEventListener('resize', scaleSlides);
+goTo(0);
+</script>
+</body>
+</html>
